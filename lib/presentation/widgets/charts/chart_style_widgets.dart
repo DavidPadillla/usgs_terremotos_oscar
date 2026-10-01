@@ -5,10 +5,7 @@ import '../../../logic/analytics/earthquake_chart_catalog.dart';
 import 'earthquake_chart_renderer.dart';
 
 class FlChartStyleWidget extends StatelessWidget {
-  const FlChartStyleWidget({
-    super.key,
-    required this.content,
-  });
+  const FlChartStyleWidget({super.key, required this.content});
 
   final Widget content;
 
@@ -17,7 +14,16 @@ class FlChartStyleWidget extends StatelessWidget {
 }
 
 class GraphicChartStyleWidget extends StatelessWidget {
-  const GraphicChartStyleWidget({
+  const GraphicChartStyleWidget({super.key, required this.content});
+
+  final Widget content;
+
+  @override
+  Widget build(BuildContext context) => content;
+}
+
+class CommunityChartsStyleWidget extends StatelessWidget {
+  const CommunityChartsStyleWidget({
     super.key,
     required this.content,
   });

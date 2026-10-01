@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:community_charts_flutter/community_charts_flutter.dart'
+    as community;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:graphic/graphic.dart' as graphic;
@@ -63,6 +65,18 @@ class _EarthquakeChartRendererState extends State<EarthquakeChartRenderer> {
       );
     }
 
+    if (definition.library == ChartLibrary.communityCharts) {
+      final chart = _communityChart(data);
+      return _chartColumn(
+        data,
+        SizedBox(
+          height: _chartHeight(data),
+          key: ValueKey('${definition.library.name}-${definition.id}'),
+          child: chart,
+        ),
+      );
+    }
+
     final dataKey = _dataHash(data);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -114,6 +128,100 @@ class _EarthquakeChartRendererState extends State<EarthquakeChartRenderer> {
         );
       },
     );
+  }
+
+  Widget _communityChart(List<EarthquakeChartDatum> data) {
+    final series = _communitySeries(data);
+    return switch (definition.style) {
+      ChartStyle.pie => community.PieChart<String>(
+          [
+            community.Series<EarthquakeChartDatum, String>(
+              id: definition.title,
+              data: data,
+              domainFn: (datum, _) => datum.label,
+              measureFn: (datum, _) => datum.value,
+            ),
+          ],
+          animate: true,
+        ),
+      ChartStyle.scatter => community.ScatterPlotChart(
+          [
+            community.Series<EarthquakeChartDatum, num>(
+              id: definition.title,
+              data: data,
+              domainFn: (datum, index) =>
+                  datum.xValue ?? (index ?? 0).toDouble(),
+              measureFn: (datum, _) => datum.value,
+            ),
+          ],
+          animate: true,
+        ),
+      ChartStyle.line || ChartStyle.area => community.LineChart(
+          [
+            community.Series<EarthquakeChartDatum, num>(
+              id: definition.title,
+              data: data,
+              domainFn: (_, index) => (index ?? 0).toDouble(),
+              measureFn: (datum, _) => datum.value,
+            ),
+          ],
+          animate: true,
+        ),
+      ChartStyle.bar ||
+      ChartStyle.groupedBar ||
+      ChartStyle.combo =>
+        community.BarChart(
+          series,
+          animate: true,
+          barGroupingType: community.BarGroupingType.grouped,
+        ),
+    };
+  }
+
+  List<community.Series<EarthquakeChartDatum, String>> _communitySeries(
+    List<EarthquakeChartDatum> data,
+  ) {
+    if (definition.style == ChartStyle.combo) {
+      final secondaryData = data
+          .where((datum) => datum.secondaryValue != null)
+          .map(
+            (datum) => EarthquakeChartDatum(
+              label: datum.label,
+              value: datum.secondaryValue!,
+            ),
+          )
+          .toList();
+      return [
+        community.Series<EarthquakeChartDatum, String>(
+          id: 'Cantidad',
+          data: data,
+          domainFn: (datum, _) => datum.label,
+          measureFn: (datum, _) => datum.value,
+        ),
+        community.Series<EarthquakeChartDatum, String>(
+          id: 'Medida secundaria',
+          data: secondaryData,
+          domainFn: (datum, _) => datum.label,
+          measureFn: (datum, _) => datum.value,
+        ),
+      ];
+    }
+    final namedSeries = data.map((datum) => datum.series).toSet()..remove('');
+    final groups = namedSeries.isEmpty
+        ? <String, List<EarthquakeChartDatum>>{definition.title: data}
+        : {
+            for (final name in namedSeries)
+              name: data.where((datum) => datum.series == name).toList(),
+          };
+    return [
+      for (final entry in groups.entries)
+        community.Series<EarthquakeChartDatum, String>(
+          id: entry.key,
+          data: entry.value,
+          domainFn: (datum, _) => datum.label,
+          measureFn: (datum, _) => datum.value,
+        ),
+    ];
   }
 
   Widget _chartColumn(

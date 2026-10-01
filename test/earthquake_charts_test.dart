@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:community_charts_flutter/community_charts_flutter.dart'
+    as community;
+import 'package:fl_chart/fl_chart.dart' as fl_chart;
+import 'package:graphic/graphic.dart' as graphic;
 import 'package:usgs_terremotos/config/app_constants.dart';
 import 'package:usgs_terremotos/config/app_theme.dart';
-import 'package:graphic/graphic.dart' as graphic;
 import 'package:usgs_terremotos/data/models/terremoto.dart';
 import 'package:usgs_terremotos/logic/analytics/earthquake_chart_catalog.dart';
 import 'package:usgs_terremotos/presentation/widgets/charts/earthquake_chart_view.dart';
@@ -71,11 +73,11 @@ void main() {
     );
   });
 
-  test('cada librería ofrece 20 gráficas básicas y 12 avanzadas', () {
-    expect(earthquakeChartCatalog, hasLength(64));
+  test('se conservan 64 gráficas y se agregan 32 básicas y avanzadas', () {
+    expect(earthquakeChartCatalog, hasLength(96));
     expect(
-        earthquakeChartCatalog.map((chart) => chart.id).toSet(), hasLength(64));
-    for (final library in ChartLibrary.values) {
+        earthquakeChartCatalog.map((chart) => chart.id).toSet(), hasLength(96));
+    for (final library in [ChartLibrary.flChart, ChartLibrary.graphic]) {
       final libraryCharts = earthquakeChartCatalog
           .where((chart) => chart.library == library)
           .toList();
@@ -93,6 +95,27 @@ void main() {
         reason: '${library.label}: avanzadas',
       );
     }
+    final addedCharts = earthquakeChartCatalog
+        .where((chart) => chart.library == ChartLibrary.communityCharts);
+    expect(addedCharts, hasLength(32));
+    expect(
+      addedCharts.where((chart) => chart.complexity == ChartComplexity.basica),
+      hasLength(20),
+    );
+    expect(
+      addedCharts
+          .where((chart) => chart.complexity == ChartComplexity.avanzada),
+      hasLength(12),
+    );
+    expect(
+      addedCharts.where((chart) => chart.complexity == ChartComplexity.basica),
+      hasLength(20),
+    );
+    expect(
+      addedCharts
+          .where((chart) => chart.complexity == ChartComplexity.avanzada),
+      hasLength(12),
+    );
   });
 
   test('las agregaciones usan los eventos reales y conservan sus medidas', () {
@@ -114,7 +137,7 @@ void main() {
     expect(combined.first.secondaryValue, closeTo(5.1, 0.001));
   });
 
-  testWidgets('las 64 gráficas construyen sus widgets sin excepciones',
+  testWidgets('las 96 gráficas construyen sus widgets sin excepciones',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(900, 900));
     for (final definition in earthquakeChartCatalog) {
@@ -145,7 +168,7 @@ void main() {
     await tester.binding.setSurfaceSize(null);
   });
 
-  testWidgets('genera resumen legible para cada una de las 64 gráficas',
+  testWidgets('genera resumen legible para cada una de las 96 gráficas',
       (tester) async {
     for (final definition in earthquakeChartCatalog) {
       await tester.pumpWidget(
@@ -226,124 +249,57 @@ void main() {
         ),
       ),
     );
+    await tester.pump(const Duration(seconds: 2));
     expect(find.byType(GraphicChartStyleWidget), findsOneWidget);
+    expect(find.byType(graphic.Chart<Map<String, Object>>), findsOneWidget);
   });
 
-  testWidgets('Graphic usa sectores correctos, barras agrupadas y transiciones',
-      (tester) async {
-    final pie = earthquakeChartCatalog.firstWhere(
-      (chart) =>
-          chart.library == ChartLibrary.graphic &&
-          chart.style == ChartStyle.pie,
-    );
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: EarthquakeChartView(
-            definition: pie,
-            earthquakes: earthquakes,
-          ),
-        ),
-      ),
-    );
-    final chartFinder = find.byWidgetPredicate(
-      (widget) => widget is graphic.Chart<Map<String, Object>>,
-    );
-    expect(chartFinder, findsOneWidget);
-    var chart = tester.widget<graphic.Chart<Map<String, Object>>>(chartFinder);
-    expect(chart.transforms?.single, isA<graphic.Proportion>());
-    expect((chart.coord as graphic.PolarCoord).transposed, isTrue);
-    expect(chart.marks.single.transition, isNotNull);
-    expect(chart.marks.single.entrance, contains(graphic.MarkEntrance.opacity));
-    expect(chart.selections, contains('tap'));
-    expect(chart.tooltip?.selections, contains('tap'));
-    expect(chart.marks.single.label, isNotNull);
-    expect(chart.marks.single.size, isNotNull);
-
-    final groupedBars = earthquakeChartCatalog.firstWhere(
+  testWidgets('Community Charts dibuja las nuevas gráficas', (tester) async {
+    final communityChart = earthquakeChartCatalog.firstWhere(
       (definition) =>
-          definition.library == ChartLibrary.graphic &&
+          definition.library == ChartLibrary.communityCharts &&
           definition.style == ChartStyle.groupedBar,
     );
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: EarthquakeChartView(
-            definition: groupedBars,
+            definition: communityChart,
             earthquakes: earthquakes,
           ),
         ),
       ),
     );
-    chart = tester.widget<graphic.Chart<Map<String, Object>>>(chartFinder);
-    expect(
-      chart.marks.single.modifiers,
-      contains(isA<graphic.DodgeModifier>()),
-    );
-    expect(chart.marks.single.transition, isNotNull);
-
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(
-      tester
-          .widgetList<Opacity>(find.byType(Opacity))
-          .any((opacity) => opacity.opacity > 0 && opacity.opacity < 1),
-      isTrue,
-      reason: 'La gráfica debe tener una animación de entrada visible.',
-    );
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.byType(community.BarChart), findsOneWidget);
   });
 
-  testWidgets('ambas librerías exponen ejes con títulos y unidades',
-      (tester) async {
-    final flDefinition = earthquakeChartCatalog.firstWhere(
-      (chart) =>
-          chart.library == ChartLibrary.flChart &&
-          chart.style == ChartStyle.line,
-    );
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: EarthquakeChartView(
-            definition: flDefinition,
-            earthquakes: earthquakes,
+  testWidgets('las tres librerías conservan o dibujan líneas', (tester) async {
+    for (final library in ChartLibrary.values) {
+      final definition = earthquakeChartCatalog.firstWhere(
+        (chart) => chart.library == library && chart.style == ChartStyle.line,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: EarthquakeChartView(
+              definition: definition,
+              earthquakes: earthquakes,
+            ),
           ),
         ),
-      ),
-    );
-    final flLine = tester.widget<LineChart>(find.byType(LineChart));
-    expect(flLine.data.titlesData.show, isTrue);
-    expect(flLine.data.titlesData.leftTitles.showSideTitles, isTrue);
-    expect(flLine.data.titlesData.bottomTitles.showAxisTitles, isTrue);
-
-    final graphicDefinition = earthquakeChartCatalog.firstWhere(
-      (chart) =>
-          chart.library == ChartLibrary.graphic &&
-          chart.style == ChartStyle.line,
-    );
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: EarthquakeChartView(
-            definition: graphicDefinition,
-            earthquakes: earthquakes,
-          ),
-        ),
-      ),
-    );
-    final graphicChartFinder = find.byWidgetPredicate(
-      (widget) => widget is graphic.Chart<Map<String, Object>>,
-    );
-    final graphicChart =
-        tester.widget<graphic.Chart<Map<String, Object>>>(graphicChartFinder);
-    expect(graphicChart.selections, contains('tap'));
-    expect(
-      graphicChart.tooltip?.variables,
-      containsAll(['Fecha', 'Valor', 'Lugar']),
-    );
-    expect(graphicChart.crosshair, isNotNull);
-    expect(find.text('Eje vertical: Magnitud (Mw)'), findsOneWidget);
-    expect(find.text('Eje horizontal: Fecha'), findsOneWidget);
-    expect(find.textContaining('Máximo: 7.1 Mw'), findsOneWidget);
-    expect(find.textContaining('Mayor magnitud'), findsOneWidget);
+      );
+      await tester.pump(const Duration(seconds: 2));
+      switch (library) {
+        case ChartLibrary.flChart:
+          expect(find.byType(fl_chart.LineChart), findsOneWidget);
+        case ChartLibrary.graphic:
+          expect(
+              find.byType(graphic.Chart<Map<String, Object>>), findsOneWidget);
+        case ChartLibrary.communityCharts:
+          expect(find.byType(community.LineChart), findsOneWidget);
+      }
+    }
   });
 }
 

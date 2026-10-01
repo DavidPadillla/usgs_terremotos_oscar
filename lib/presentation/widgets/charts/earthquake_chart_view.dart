@@ -62,6 +62,8 @@ class EarthquakeChartView extends StatelessWidget {
     final chart = switch (definition.library) {
       ChartLibrary.flChart => FlChartStyleWidget(content: styleChart),
       ChartLibrary.graphic => GraphicChartStyleWidget(content: styleChart),
+      ChartLibrary.communityCharts =>
+        CommunityChartsStyleWidget(content: styleChart),
     };
     return Card(
       clipBehavior: Clip.antiAlias,

@@ -2,7 +2,9 @@ import '../../data/models/terremoto.dart';
 
 enum ChartLibrary {
   flChart('fl_chart'),
-  graphic('Graphic');
+  graphic('Graphic'),
+  communityCharts('Community Charts'),
+  ;
 
   const ChartLibrary(this.label);
 
@@ -364,6 +366,21 @@ const _chartTemplates = <EarthquakeChartDefinition>[
   ),
 ];
 
+List<EarthquakeChartDefinition> _additionalChartDefinitions() {
+  return [
+    for (final chart in _chartTemplates)
+      EarthquakeChartDefinition(
+        id: chart.id + _chartTemplates.length * 2,
+        title: chart.title,
+        description: chart.description,
+        library: ChartLibrary.communityCharts,
+        complexity: chart.complexity,
+        style: chart.style,
+        metric: chart.metric,
+      ),
+  ];
+}
+
 final earthquakeChartCatalog = List<EarthquakeChartDefinition>.unmodifiable([
   ..._chartTemplates,
   for (final chart in _chartTemplates)
@@ -376,6 +393,7 @@ final earthquakeChartCatalog = List<EarthquakeChartDefinition>.unmodifiable([
       style: chart.style,
       metric: chart.metric,
     ),
+  ..._additionalChartDefinitions(),
 ]);
 
 List<EarthquakeChartDatum> buildChartData(
