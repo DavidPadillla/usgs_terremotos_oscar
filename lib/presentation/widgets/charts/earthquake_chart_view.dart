@@ -4,6 +4,7 @@ import '../../../data/models/terremoto.dart';
 import '../../../logic/analytics/earthquake_chart_catalog.dart';
 import 'chart_texts.dart';
 import 'chart_style_widgets.dart';
+import 'syncfusion_earthquake_chart.dart';
 
 class EarthquakeChartView extends StatelessWidget {
   const EarthquakeChartView({
@@ -64,6 +65,10 @@ class EarthquakeChartView extends StatelessWidget {
       ChartLibrary.graphic => GraphicChartStyleWidget(content: styleChart),
       ChartLibrary.communityCharts =>
         CommunityChartsStyleWidget(content: styleChart),
+      ChartLibrary.syncfusionCharts => SyncfusionEarthquakeChart(
+          definition: definition,
+          earthquakes: earthquakes,
+        ),
     };
     return Card(
       clipBehavior: Clip.antiAlias,

@@ -4,6 +4,7 @@ import 'package:community_charts_flutter/community_charts_flutter.dart'
     as community;
 import 'package:fl_chart/fl_chart.dart' as fl_chart;
 import 'package:graphic/graphic.dart' as graphic;
+import 'package:syncfusion_flutter_charts/charts.dart' as syncfusion;
 import 'package:usgs_terremotos/config/app_constants.dart';
 import 'package:usgs_terremotos/config/app_theme.dart';
 import 'package:usgs_terremotos/data/models/terremoto.dart';
@@ -73,10 +74,12 @@ void main() {
     );
   });
 
-  test('se conservan 64 gráficas y se agregan 32 básicas y avanzadas', () {
-    expect(earthquakeChartCatalog, hasLength(96));
+  test('se conservan las gráficas y se agregan 32 de Syncfusion', () {
+    expect(earthquakeChartCatalog, hasLength(128));
     expect(
-        earthquakeChartCatalog.map((chart) => chart.id).toSet(), hasLength(96));
+      earthquakeChartCatalog.map((chart) => chart.id).toSet(),
+      hasLength(128),
+    );
     for (final library in [ChartLibrary.flChart, ChartLibrary.graphic]) {
       final libraryCharts = earthquakeChartCatalog
           .where((chart) => chart.library == library)
@@ -106,6 +109,32 @@ void main() {
       addedCharts
           .where((chart) => chart.complexity == ChartComplexity.avanzada),
       hasLength(12),
+    );
+    final syncfusionCharts = earthquakeChartCatalog
+        .where((chart) => chart.library == ChartLibrary.syncfusionCharts)
+        .toList();
+    expect(syncfusionCharts, hasLength(32));
+    expect(
+      syncfusionCharts
+          .where((chart) => chart.complexity == ChartComplexity.basica),
+      hasLength(20),
+    );
+    expect(
+      syncfusionCharts
+          .where((chart) => chart.complexity == ChartComplexity.avanzada),
+      hasLength(12),
+    );
+    expect(
+      syncfusionCharts.map((chart) => chart.syncfusionType).toSet(),
+      hasLength(32),
+    );
+    final existingTitles = earthquakeChartCatalog
+        .where((chart) => chart.library != ChartLibrary.syncfusionCharts)
+        .map((chart) => chart.title)
+        .toSet();
+    expect(
+      syncfusionCharts.every((chart) => !existingTitles.contains(chart.title)),
+      isTrue,
     );
     expect(
       addedCharts.where((chart) => chart.complexity == ChartComplexity.basica),
@@ -137,7 +166,7 @@ void main() {
     expect(combined.first.secondaryValue, closeTo(5.1, 0.001));
   });
 
-  testWidgets('las 96 gráficas construyen sus widgets sin excepciones',
+  testWidgets('las 128 gráficas construyen sus widgets sin excepciones',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(900, 900));
     for (final definition in earthquakeChartCatalog) {
@@ -168,7 +197,7 @@ void main() {
     await tester.binding.setSurfaceSize(null);
   });
 
-  testWidgets('genera resumen legible para cada una de las 96 gráficas',
+  testWidgets('genera resumen legible para cada una de las 128 gráficas',
       (tester) async {
     for (final definition in earthquakeChartCatalog) {
       await tester.pumpWidget(
@@ -274,7 +303,7 @@ void main() {
     expect(find.byType(community.BarChart), findsOneWidget);
   });
 
-  testWidgets('las tres librerías conservan o dibujan líneas', (tester) async {
+  testWidgets('las librerías conservan o dibujan líneas', (tester) async {
     for (final library in ChartLibrary.values) {
       final definition = earthquakeChartCatalog.firstWhere(
         (chart) => chart.library == library && chart.style == ChartStyle.line,
@@ -298,6 +327,8 @@ void main() {
               find.byType(graphic.Chart<Map<String, Object>>), findsOneWidget);
         case ChartLibrary.communityCharts:
           expect(find.byType(community.LineChart), findsOneWidget);
+        case ChartLibrary.syncfusionCharts:
+          expect(find.byType(syncfusion.SfCartesianChart), findsOneWidget);
       }
     }
   });

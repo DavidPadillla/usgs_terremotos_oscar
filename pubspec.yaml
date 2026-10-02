@@ -4,7 +4,8 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.7.0 <4.0.0'
+  flutter: '>=3.29.0'
 
 dependencies:
   flutter:
@@ -19,6 +20,7 @@ dependencies:
   fl_chart: ^1.2.0
   graphic: ^2.7.0
   community_charts_flutter: ^1.0.4
+  syncfusion_flutter_charts: 30.2.7
 dev_dependencies:
   flutter_test:
     sdk: flutter

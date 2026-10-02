@@ -68,8 +68,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       children: [
         const Text(
-          '96 gráficas con datos de USGS: 64 existentes y 32 nuevas con Community Charts. '
-          'Las nuevas incluyen 20 básicas y 12 avanzadas.',
+          '128 gráficas con datos de USGS: 96 existentes y 32 nuevas con Syncfusion Charts. '
+          'Syncfusion incluye 20 básicas y 12 avanzadas.',
           style: TextStyle(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 14),
